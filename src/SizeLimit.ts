@@ -18,11 +18,11 @@ const EmptyResult = {
 };
 
 class SizeLimit {
-  static SIZE_RESULTS_HEADER = ["Path", "Size"];
+  static SIZE_RESULTS_HEADER = ["Name", "Size (gzipped)"];
 
   static TIME_RESULTS_HEADER = [
-    "Path",
-    "Size",
+    "Name",
+    "Size (gzipped)",
     "Loading time (3g)",
     "Running time (snapdragon)",
     "Total time"
@@ -89,15 +89,15 @@ class SizeLimit {
         this.formatBytes(current.size),
         this.formatChange(base.size, current.size)
       ),
-      this.formatLine(
+      current.loading === undefined ? "-" : this.formatLine(
         this.formatTime(current.loading),
         this.formatChange(base.loading, current.loading)
       ),
-      this.formatLine(
+      current.running === undefined ? "-" : this.formatLine(
         this.formatTime(current.running),
         this.formatChange(base.running, current.running)
       ),
-      this.formatTime(current.total)
+      current.total === undefined ? "-" : this.formatTime(current.total)
     ];
   }
 
@@ -137,9 +137,7 @@ class SizeLimit {
     current: { [name: string]: IResult }
   ): Array<Array<string>> {
     const names = [...new Set([...Object.keys(base), ...Object.keys(current)])];
-    const isSize = names.some(
-      (name: string) => current[name] && current[name].total === undefined
-    );
+    const isSize = names.every((name: string) => current[name]?.total === undefined);
     const header = isSize
       ? SizeLimit.SIZE_RESULTS_HEADER
       : SizeLimit.TIME_RESULTS_HEADER;
