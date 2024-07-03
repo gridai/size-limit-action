@@ -114,17 +114,18 @@ class SizeLimit {
 
     return results.reduce(
       (current: { [name: string]: IResult }, result: any) => {
-        let time = {};
+        let time: Pick<IResult, 'loading' | 'running' | 'total'> = {};
 
-        if (result.loading !== undefined && result.running !== undefined) {
-          const loading = +result.loading;
-          const running = +result.running;
+        if (result.loading !== undefined) {
+          time.loading = +result.oading;
+        }
 
-          time = {
-            running,
-            loading,
-            total: loading + running
-          };
+        if (result.running !== undefined) {
+          time.running = +result.running;
+
+          if (time.loading !== undefined) {
+            time.total = time.loading + time.running;
+          }
         }
 
         return {
@@ -132,7 +133,6 @@ class SizeLimit {
           [result.name]: {
             name: result.name,
             size: +result.size,
-            loading: result.loading === undefined ? undefined : +result.loading,
             ...time
           }
         };
