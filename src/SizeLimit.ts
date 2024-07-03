@@ -18,7 +18,11 @@ const EmptyResult = {
 };
 
 class SizeLimit {
-  static SIZE_RESULTS_HEADER = ["Name", "Size (gzipped)"];
+  static SIZE_RESULTS_HEADER = [
+    "Name",
+    "Size (gzipped)",
+    "Loading time (3g)",
+  ];
 
   static TIME_RESULTS_HEADER = [
     "Name",
@@ -74,7 +78,11 @@ class SizeLimit {
       this.formatLine(
         this.formatBytes(current.size),
         this.formatChange(base.size, current.size)
-      )
+      ),
+      current.loading === undefined ? "-" : this.formatLine(
+        this.formatTime(current.loading),
+        this.formatChange(base.loading, current.loading)
+      ),
     ];
   }
 
@@ -124,6 +132,7 @@ class SizeLimit {
           [result.name]: {
             name: result.name,
             size: +result.size,
+            loading: result.loading === undefined ? undefined : +result.loading,
             ...time
           }
         };
