@@ -79,6 +79,8 @@ async function run() {
     try {
       base = limit.parseResults(baseOutput);
       current = limit.parseResults(output);
+      console.log("XXX", base);
+      console.log("XXX-YYY", current);
     } catch (error) {
       console.log(
         "Error parsing size-limit output. The output should be a json."
@@ -86,9 +88,12 @@ async function run() {
       throw error;
     }
 
+    const formattedResult = limit.formatResults(base, current);
+    console.log("XXX-YYY-ZZZ", formattedResult);
+
     const body = [
       SIZE_LIMIT_HEADING,
-      table(limit.formatResults(base, current))
+      table(formattedResult),
     ].join("\r\n");
 
     const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);
