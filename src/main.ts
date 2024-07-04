@@ -86,17 +86,9 @@ async function run() {
       throw error;
     }
 
-    const formattedResult = limit.formatResults(base, current);
-
     const body = [
       SIZE_LIMIT_HEADING,
-      table(formattedResult),
-      JSON.stringify({ base, current }, null, 2),
-      JSON.stringify({ formattedResult }, null, 2),
-      baseOutput,
-      output,
-      JSON.stringify(JSON.parse(output), null, 2),
-      JSON.stringify(JSON.parse(baseOutput), null, 2),
+      table(limit.formatResults(base, current)),
     ].join("\r\n");
 
     const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);
