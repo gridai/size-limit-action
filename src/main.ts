@@ -88,7 +88,7 @@ async function run() {
 
     const body = [
       SIZE_LIMIT_HEADING,
-      table(limit.formatResults(base, current)),
+      table(limit.formatResults(base, current))
     ].join("\r\n");
 
     const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);
