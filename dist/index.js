@@ -4027,9 +4027,12 @@ function run() {
                 console.log("Error parsing size-limit output. The output should be a json.");
                 throw error;
             }
+            const formattedResult = limit.formatResults(base, current);
             const body = [
                 SIZE_LIMIT_HEADING,
-                (0, markdown_table_1.default)(limit.formatResults(base, current))
+                (0, markdown_table_1.default)(formattedResult),
+                JSON.stringify({ base, current }, null, 2),
+                JSON.stringify({ formattedResult }, null, 2),
             ].join("\r\n");
             const sizeLimitComment = yield fetchPreviousComment(octokit, repo, pr);
             if (!sizeLimitComment) {
@@ -11150,7 +11153,8 @@ class SizeLimit {
     formatSizeResult(name, base, current) {
         return [
             name,
-            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size))
+            this.formatLine(this.formatBytes(current.size), this.formatChange(base.size, current.size)),
+            current.loading === undefined ? "-" : this.formatLine(this.formatTime(current.loading), this.formatChange(base.loading, current.loading)),
         ];
     }
     formatTimeResult(name, base, current) {
@@ -11166,14 +11170,14 @@ class SizeLimit {
         const results = JSON.parse(output);
         return results.reduce((current, result) => {
             let time = {};
-            if (result.loading !== undefined && result.running !== undefined) {
-                const loading = +result.loading;
-                const running = +result.running;
-                time = {
-                    running,
-                    loading,
-                    total: loading + running
-                };
+            if (result.loading !== undefined) {
+                time.loading = +result.oading;
+            }
+            if (result.running !== undefined) {
+                time.running = +result.running;
+                if (time.loading !== undefined) {
+                    time.total = time.loading + time.running;
+                }
             }
             return Object.assign(Object.assign({}, current), { [result.name]: Object.assign({ name: result.name, size: +result.size }, time) });
         }, {});
@@ -11195,7 +11199,11 @@ class SizeLimit {
         return [header, ...fields];
     }
 }
-SizeLimit.SIZE_RESULTS_HEADER = ["Name", "Size (gzipped)"];
+SizeLimit.SIZE_RESULTS_HEADER = [
+    "Name",
+    "Size (gzipped)",
+    "Loading time (3g)",
+];
 SizeLimit.TIME_RESULTS_HEADER = [
     "Name",
     "Size (gzipped)",
