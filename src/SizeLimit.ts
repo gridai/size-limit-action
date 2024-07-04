@@ -18,7 +18,11 @@ const EmptyResult = {
 };
 
 class SizeLimit {
-  static SIZE_RESULTS_HEADER = ["Name", "Size (gzipped)"];
+  static SIZE_RESULTS_HEADER = [
+    "Name",
+    "Size (gzipped)",
+    "Loading time (3g)",
+  ];
 
   static TIME_RESULTS_HEADER = [
     "Name",
@@ -74,7 +78,11 @@ class SizeLimit {
       this.formatLine(
         this.formatBytes(current.size),
         this.formatChange(base.size, current.size)
-      )
+      ),
+      current.loading === undefined ? "-" : this.formatLine(
+        this.formatTime(current.loading),
+        this.formatChange(base.loading, current.loading)
+      ),
     ];
   }
 
@@ -106,17 +114,18 @@ class SizeLimit {
 
     return results.reduce(
       (current: { [name: string]: IResult }, result: any) => {
-        let time = {};
+        let time: Pick<IResult, 'loading' | 'running' | 'total'> = {};
 
-        if (result.loading !== undefined && result.running !== undefined) {
-          const loading = +result.loading;
-          const running = +result.running;
+        if (result.loading !== undefined) {
+          time.loading = +result.loading;
+        }
 
-          time = {
-            running,
-            loading,
-            total: loading + running
-          };
+        if (result.running !== undefined) {
+          time.running = +result.running;
+
+          if (time.loading !== undefined) {
+            time.total = time.loading + time.running;
+          }
         }
 
         return {
