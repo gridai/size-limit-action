@@ -117,7 +117,7 @@ class SizeLimit {
         let time: Pick<IResult, 'loading' | 'running' | 'total'> = {};
 
         if (result.loading !== undefined) {
-          time.loading = +result.oading;
+          time.loading = +result.loading;
         }
 
         if (result.running !== undefined) {

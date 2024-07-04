@@ -93,6 +93,10 @@ async function run() {
       table(formattedResult),
       JSON.stringify({ base, current }, null, 2),
       JSON.stringify({ formattedResult }, null, 2),
+      baseOutput,
+      output,
+      JSON.stringify(JSON.parse(output), null, 2),
+      JSON.stringify(JSON.parse(baseOutput), null, 2),
     ].join("\r\n");
 
     const sizeLimitComment = await fetchPreviousComment(octokit, repo, pr);

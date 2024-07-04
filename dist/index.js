@@ -4033,6 +4033,10 @@ function run() {
                 (0, markdown_table_1.default)(formattedResult),
                 JSON.stringify({ base, current }, null, 2),
                 JSON.stringify({ formattedResult }, null, 2),
+                baseOutput,
+                output,
+                JSON.stringify(JSON.parse(output), null, 2),
+                JSON.stringify(JSON.parse(baseOutput), null, 2),
             ].join("\r\n");
             const sizeLimitComment = yield fetchPreviousComment(octokit, repo, pr);
             if (!sizeLimitComment) {
@@ -11171,7 +11175,7 @@ class SizeLimit {
         return results.reduce((current, result) => {
             let time = {};
             if (result.loading !== undefined) {
-                time.loading = +result.oading;
+                time.loading = +result.loading;
             }
             if (result.running !== undefined) {
                 time.running = +result.running;
