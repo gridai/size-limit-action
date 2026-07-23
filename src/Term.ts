@@ -37,6 +37,8 @@ class Term {
   ): Promise<{ status: number; output: string }> {
     const manager = packageManager || this.getPackageManager(directory);
     let output = "";
+    let status = 0;
+    let originalRef = "";
 
     if (branch) {
       try {
@@ -45,37 +47,58 @@ class Term {
         console.log("Fetch failed", error.message);
       }
 
+      // Remember where we are so we can return here after building the base
+      // branch. Without this the workspace is left checked out on the base ref,
+      // which breaks any later step or post-action that expects the original
+      // tree (e.g. a local composite action whose post-step files then vanish).
+      await exec(`git rev-parse HEAD`, [], {
+        listeners: {
+          stdout: (data: Buffer) => {
+            originalRef += data.toString();
+          }
+        }
+      });
+      originalRef = originalRef.trim();
+
       await exec(`git checkout -f ${branch}`);
     }
 
-    if (skipStep !== INSTALL_STEP && skipStep !== BUILD_STEP) {
-      await exec(`${manager} install`, [], {
+    try {
+      if (skipStep !== INSTALL_STEP && skipStep !== BUILD_STEP) {
+        await exec(`${manager} install`, [], {
+          cwd: directory
+        });
+      }
+
+      if (skipStep !== BUILD_STEP) {
+        const buildStep = buildScript || "build";
+        await exec(`${manager} run ${buildStep}`, [], {
+          cwd: directory
+        });
+      }
+
+      status = await exec(script, [], {
+        windowsVerbatimArguments,
+        ignoreReturnCode: true,
+        listeners: {
+          stdout: (data: Buffer) => {
+            output += data.toString();
+          }
+        },
         cwd: directory
       });
-    }
 
-    if (skipStep !== BUILD_STEP) {
-      const script = buildScript || "build";
-      await exec(`${manager} run ${script}`, [], {
-        cwd: directory
-      });
-    }
-
-    const status = await exec(script, [], {
-      windowsVerbatimArguments,
-      ignoreReturnCode: true,
-      listeners: {
-        stdout: (data: Buffer) => {
-          output += data.toString();
-        }
-      },
-      cwd: directory
-    });
-
-    if (cleanScript) {
-      await exec(`${manager} run ${cleanScript}`, [], {
-        cwd: directory
-      });
+      if (cleanScript) {
+        await exec(`${manager} run ${cleanScript}`, [], {
+          cwd: directory
+        });
+      }
+    } finally {
+      // Restore the original checkout even if the base build fails, so we never
+      // leave the workspace stranded on the base ref.
+      if (originalRef) {
+        await exec(`git checkout -f ${originalRef}`);
+      }
     }
 
     return {

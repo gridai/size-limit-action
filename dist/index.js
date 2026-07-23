@@ -12732,6 +12732,8 @@ class Term {
         return __awaiter(this, void 0, void 0, function* () {
             const manager = packageManager || this.getPackageManager(directory);
             let output = "";
+            let status = 0;
+            let originalRef = "";
             if (branch) {
                 try {
                     yield (0, exec_1.exec)(`git fetch origin ${branch} --depth=1`);
@@ -12739,33 +12741,54 @@ class Term {
                 catch (error) {
                     console.log("Fetch failed", error.message);
                 }
+                // Remember where we are so we can return here after building the base
+                // branch. Without this the workspace is left checked out on the base ref,
+                // which breaks any later step or post-action that expects the original
+                // tree (e.g. a local composite action whose post-step files then vanish).
+                yield (0, exec_1.exec)(`git rev-parse HEAD`, [], {
+                    listeners: {
+                        stdout: (data) => {
+                            originalRef += data.toString();
+                        }
+                    }
+                });
+                originalRef = originalRef.trim();
                 yield (0, exec_1.exec)(`git checkout -f ${branch}`);
             }
-            if (skipStep !== INSTALL_STEP && skipStep !== BUILD_STEP) {
-                yield (0, exec_1.exec)(`${manager} install`, [], {
+            try {
+                if (skipStep !== INSTALL_STEP && skipStep !== BUILD_STEP) {
+                    yield (0, exec_1.exec)(`${manager} install`, [], {
+                        cwd: directory
+                    });
+                }
+                if (skipStep !== BUILD_STEP) {
+                    const buildStep = buildScript || "build";
+                    yield (0, exec_1.exec)(`${manager} run ${buildStep}`, [], {
+                        cwd: directory
+                    });
+                }
+                status = yield (0, exec_1.exec)(script, [], {
+                    windowsVerbatimArguments,
+                    ignoreReturnCode: true,
+                    listeners: {
+                        stdout: (data) => {
+                            output += data.toString();
+                        }
+                    },
                     cwd: directory
                 });
+                if (cleanScript) {
+                    yield (0, exec_1.exec)(`${manager} run ${cleanScript}`, [], {
+                        cwd: directory
+                    });
+                }
             }
-            if (skipStep !== BUILD_STEP) {
-                const script = buildScript || "build";
-                yield (0, exec_1.exec)(`${manager} run ${script}`, [], {
-                    cwd: directory
-                });
-            }
-            const status = yield (0, exec_1.exec)(script, [], {
-                windowsVerbatimArguments,
-                ignoreReturnCode: true,
-                listeners: {
-                    stdout: (data) => {
-                        output += data.toString();
-                    }
-                },
-                cwd: directory
-            });
-            if (cleanScript) {
-                yield (0, exec_1.exec)(`${manager} run ${cleanScript}`, [], {
-                    cwd: directory
-                });
+            finally {
+                // Restore the original checkout even if the base build fails, so we never
+                // leave the workspace stranded on the base ref.
+                if (originalRef) {
+                    yield (0, exec_1.exec)(`git checkout -f ${originalRef}`);
+                }
             }
             return {
                 status,
